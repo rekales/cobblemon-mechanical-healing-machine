@@ -1,6 +1,5 @@
 package com.krei.cobblemonmechanicalhealingmachine;
 
-import com.cobblemon.mod.common.client.render.block.HealingMachineRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -82,9 +81,12 @@ public class MechanicalHealingMachine {
         BLOCKS.register(modEventBus);
         BLOCK_ENTITY_TYPES.register(modEventBus);
         ITEMS.register(modEventBus);
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+//        modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
         modEventBus.addListener(MechanicalHealingMachine::buildContents);
         modEventBus.addListener(MechanicalHealingMachine::clientInit);
+        modEventBus.addListener(ServerConfig::onLoad);
+        modEventBus.addListener(ServerConfig::onReload);
     }
 
     @SubscribeEvent // on the mod event bus

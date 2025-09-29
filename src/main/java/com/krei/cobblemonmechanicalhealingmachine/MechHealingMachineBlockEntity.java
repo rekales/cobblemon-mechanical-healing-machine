@@ -9,6 +9,7 @@ import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.pokeball.PokeBall;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.util.*;
+import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import kotlin.ranges.RangesKt;
 import net.minecraft.core.BlockPos;
@@ -350,10 +351,8 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             (world, pos, state, blockEntity) -> {
                 if (world.isClientSide()) return;
 
-                // TODO: minimum speed config
-                int speedForActive = 16;
-                blockEntity.active = speedForActive < Math.abs(blockEntity.getSpeed());
-                if (!blockEntity.active) { // NOTE: Added for minimum speed checks
+                blockEntity.active = ServerConfig.minActivationSpeed < Math.abs(blockEntity.getSpeed());
+                if (!blockEntity.active) {  // NOTE: Added for minimum speed checks
                     blockEntity.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
                     blockEntity.markUpdated();
                 } else if (blockEntity.isInUse()) {
@@ -368,10 +367,8 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
                     float chargePerTick = Math.max(0f, Cobblemon.config.getChargeGainedPerTick());
 
                     // NOTE: Added for Create Kinetics integration
-                    // TODO: rotation speed for max recharge config
-                    int speedForMax = 256;
                     float rotSpeed = Math.abs(blockEntity.getSpeed());
-                    chargePerTick = chargePerTick * Math.min(1, Math.max(0, rotSpeed/speedForMax));
+                    chargePerTick = chargePerTick * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxChargeRotSpeed));
 
                     blockEntity.healingCharge = Math.min(
                             blockEntity.maxCharge,
@@ -392,5 +389,12 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
     public boolean isActive() {
         return active;
+    }
+
+    @Override
+    public float calculateStressApplied() {
+        float impact = (float)ServerConfig.stressImpact;
+        this.lastStressApplied = impact;
+        return impact;
     }
 }
