@@ -25,11 +25,6 @@ public class ServerConfig {
             .comment("Should the healing machine drop the mhm")
             .define("hmDropsMhm", true);
 
-    // TODO: Implement
-    public static final ModConfigSpec.BooleanValue HIDE_NORMAL = BUILDER
-            .comment("Should the healing machine be hidden")
-            .define("hideNormal", true);
-
 
     static final ModConfigSpec SPEC = BUILDER.build();
 
