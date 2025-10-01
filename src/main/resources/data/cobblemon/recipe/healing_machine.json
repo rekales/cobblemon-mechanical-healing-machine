@@ -1,0 +1,28 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CGC",
+    "IRI",
+    "IDI"
+  ],
+  "key": {
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "G": {
+      "item": "minecraft:ghast_tear"
+    },
+    "D": {
+      "tag": "c:gems/diamond"
+    },
+    "R": {
+      "item": "cobblemon:revive"
+    }
+  },
+  "result": {
+    "id": "minecraft:air"
+  }
+}

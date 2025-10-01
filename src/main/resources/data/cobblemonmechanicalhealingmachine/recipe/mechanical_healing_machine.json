@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "CCC",
+    "IRI",
+    "IDI"
+  ],
+  "key": {
+    "C": {
+      "tag": "c:ingots/copper"
+    },
+    "I": {
+      "tag": "c:ingots/iron"
+    },
+    "D": {
+      "tag": "create:cogwheel"
+    },
+    "R": {
+      "item": "cobblemon:revive"
+    }
+  },
+  "result": {
+    "id": "cobblemonmechanicalhealingmachine:mechanical_healing_machine"
+  }
+}

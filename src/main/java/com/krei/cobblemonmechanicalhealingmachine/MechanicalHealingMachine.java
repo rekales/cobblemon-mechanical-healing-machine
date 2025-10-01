@@ -1,6 +1,8 @@
 package com.krei.cobblemonmechanicalhealingmachine;
 
+import com.cobblemon.mod.common.CobblemonItems;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.PushReaction;
@@ -84,6 +86,7 @@ public class MechanicalHealingMachine {
 //        modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
         modContainer.registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
         modEventBus.addListener(MechanicalHealingMachine::buildContents);
+        modEventBus.addListener(MechanicalHealingMachine::onBuildCreativeTab);
         modEventBus.addListener(MechanicalHealingMachine::clientInit);
         modEventBus.addListener(ServerConfig::onLoad);
         modEventBus.addListener(ServerConfig::onReload);
@@ -101,6 +104,10 @@ public class MechanicalHealingMachine {
                 HEALING_MACHINE_BLOCK_ENTITY.get(),
                 MechHealingMachineRenderer::new
         );
+    }
+
+    public static void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {
+        event.remove(CobblemonItems.HEALING_MACHINE.getDefaultInstance(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
     }
 
     // TODO: CobblemonVillagerPoiTypes
