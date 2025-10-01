@@ -101,7 +101,9 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context) {
-        return this.defaultBlockState().setValue(HorizontalDirectionalBlock.FACING, context.getHorizontalDirection());
+        return this.defaultBlockState()
+                .setValue(HorizontalDirectionalBlock.FACING, context.getHorizontalDirection())
+                .setValue(MechHealingMachineBlock.CHARGE_LEVEL, 5);
     }
 
      // Not sure if needed since
@@ -226,7 +228,7 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return;
         }
 
-        if (random.nextInt(2) == 0 && healingMachine.getHealTimeLeft() > 0) {
+        if (random.nextInt(2) == 0 && healingMachine.getHealTimeLeft() > 0 && healingMachine.active) {
             double posX = pos.getX() + 0.5 + ((random.nextFloat() * 0.3F) * (random.nextInt(2) > 0 ? 1 : -1));
             double posY = pos.getY() + 0.9;
             double posZ = pos.getZ() + 0.5 + ((random.nextFloat() * 0.3F) * (random.nextInt(2) > 0 ? 1 : -1));
@@ -247,12 +249,12 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
         return 0;
     }
 
-    // NOTE: Maybe not needed? IBE already implements tick() anyway, could use Create's SmartBlockEntities that uses tickers
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState blockState, BlockEntityType<T> blockWithEntityType) {
-        // Not on original
-        return blockWithEntityType == MechanicalHealingMachine.HEALING_MACHINE_BLOCK_ENTITY.get() ? (BlockEntityTicker<T>) MechHealingMachineBlockEntity.TICKER : null;
-    }
+    // NOTE: Ditched the ticker in favor of using the tick() method for Create compatibility.
+//    @Override
+//    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level world, BlockState blockState, BlockEntityType<T> blockWithEntityType) {
+//        // Not on original
+//        return blockWithEntityType == MechanicalHealingMachine.HEALING_MACHINE_BLOCK_ENTITY.get() ? (BlockEntityTicker<T>) MechHealingMachineBlockEntity.TICKER : null;
+//    }
 
     @Override
     public RenderShape getRenderShape(BlockState blockState) {
@@ -287,24 +289,4 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
     public boolean hasShaftTowards(LevelReader world, BlockPos pos, BlockState state, Direction face) {
         return face == Direction.DOWN;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }

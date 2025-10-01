@@ -9,7 +9,6 @@ import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.pokeball.PokeBall;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.util.*;
-import com.simibubi.create.api.stress.BlockStressValues;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
 import kotlin.ranges.RangesKt;
 import net.minecraft.core.BlockPos;
@@ -21,8 +20,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
@@ -69,7 +66,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             }
         }
         this.currentUser = user;
-        this.healTimeLeft = 24;
+        this.healTimeLeft = ServerConfig.healTime;
 
         markUpdated();
     }
@@ -252,6 +249,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         if (state.getBlock() instanceof MechHealingMachineBlock) {
             int currentCharge = state.getValue(MechHealingMachineBlock.CHARGE_LEVEL);
             if (chargeLevel != currentCharge) {
+                MechanicalHealingMachine.LOGGER.debug("tick " + chargeLevel);
                 world.setBlockAndUpdate(getBlockPos(), state.setValue(MechHealingMachineBlock.CHARGE_LEVEL, chargeLevel));
             }
         }
@@ -300,17 +298,14 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private record DataSnapshot(UUID currentUser, Map<Integer, PokeBall> pokeBalls, int healTimeLeft) { }
 
 
-
-
-
     // Some getter setter boilerplate that's automatically handled by kotlin
 
     public int getCurrentSignal() {
         return currentSignal;
     }
 
-    public void setCurrentSignal(int currentSignal) {
-        this.currentSignal = currentSignal;
+    public UUID getCurrentUser() {
+        return currentUser;
     }
 
     public int getHealTimeLeft() {
@@ -347,39 +342,6 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private static final Set<UUID> alreadyHealing = new HashSet<>();
     public static final int MAX_REDSTONE_SIGNAL = 10;
 
-    public static final BlockEntityTicker<MechHealingMachineBlockEntity> TICKER =
-            (world, pos, state, blockEntity) -> {
-                if (world.isClientSide()) return;
-
-                blockEntity.active = ServerConfig.minActivationSpeed < Math.abs(blockEntity.getSpeed());
-                if (!blockEntity.active) {  // NOTE: Added for minimum speed checks
-                    blockEntity.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
-                    blockEntity.markUpdated();
-                } else if (blockEntity.isInUse()) {
-                    // Healing progression
-                    if (blockEntity.healTimeLeft > 0) {
-                        blockEntity.healTimeLeft--;
-                    } else {
-                        blockEntity.completeHealing();
-                    }
-                } else if (blockEntity.healingCharge < blockEntity.maxCharge) {
-                    // Recharging
-                    float chargePerTick = Math.max(0f, Cobblemon.config.getChargeGainedPerTick());
-
-                    // NOTE: Added for Create Kinetics integration
-                    float rotSpeed = Math.abs(blockEntity.getSpeed());
-                    chargePerTick = chargePerTick * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxChargeRotSpeed));
-
-                    blockEntity.healingCharge = Math.min(
-                            blockEntity.maxCharge,
-                            Math.max(0f, blockEntity.healingCharge + chargePerTick)
-                    );
-                    blockEntity.updateBlockChargeLevel();
-                    blockEntity.updateRedstoneSignal();
-                    blockEntity.markUpdated();
-                }
-            };
-
     public static boolean isUsingHealer(Player player) {
         return alreadyHealing.contains(player.getUUID());
     }
@@ -396,5 +358,64 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         float impact = (float)ServerConfig.stressImpact;
         this.lastStressApplied = impact;
         return impact;
+    }
+
+    // NOTE: Ditched the ticker in favor of using the tick() method for Create compatibility.
+    @Override
+    public void tick() {
+        super.tick();
+
+        Level world = this.getLevel();
+        BlockState state = this.getBlockState();
+        if (world == null || world.isClientSide()) return;
+
+        if (!state.getValue(MechHealingMachineBlock.NATURAL)) {  // Mechanical Healer Ticker
+            this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
+            if (!this.active) {  // NOTE: Added for minimum speed checks
+                this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
+                this.markUpdated();
+            } else {
+                if (this.isInUse()) {
+                    if (this.healTimeLeft > 0) {
+                        // NOTE: Added for Create Kinetics integration
+                        // NOTE: Using chance to tick instead of decimal values because I don't want to deviate too much
+                        // NOTE: This will cause inconsistent results but not immediately noticeable
+                        float rotSpeed = Math.abs(this.getSpeed());
+                        double chance = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
+                        if (world.random.nextDouble() < chance ) {
+                            this.healTimeLeft--;
+                        }
+                        this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1);
+                    } else {
+                        this.completeHealing();
+                    }
+                } else {
+                    this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL);
+                }
+                this.updateRedstoneSignal();
+                this.markUpdated();
+            }
+            this.sendData();
+            this.healingCharge = this.maxCharge;  // Full charge always
+        } else {  // Normal variant ticker if natural
+            if (this.isInUse()) {
+                // Healing progression
+                if (this.healTimeLeft > 0) {
+                    this.healTimeLeft--;
+                } else {
+                    this.completeHealing();
+                }
+            } else if (this.healingCharge < this.maxCharge) {
+                // Recharging
+                float chargePerTick = Math.max(0f, Cobblemon.config.getChargeGainedPerTick());
+                this.healingCharge = Math.min(
+                        this.maxCharge,
+                        Math.max(0f, this.healingCharge + chargePerTick)
+                );
+                this.updateBlockChargeLevel();
+                this.updateRedstoneSignal();
+                this.markUpdated();
+            }
+        }
     }
 }

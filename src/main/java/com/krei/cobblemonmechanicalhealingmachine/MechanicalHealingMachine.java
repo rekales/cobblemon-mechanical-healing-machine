@@ -102,4 +102,6 @@ public class MechanicalHealingMachine {
                 MechHealingMachineRenderer::new
         );
     }
+
+    // TODO: CobblemonVillagerPoiTypes
 }

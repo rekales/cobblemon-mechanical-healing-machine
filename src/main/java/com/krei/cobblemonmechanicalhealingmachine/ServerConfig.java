@@ -12,9 +12,13 @@ public class ServerConfig {
             .comment("Stress impact per unit of speed")
             .defineInRange("mhmStressImpact", 8f, 0, Double.MAX_VALUE);
 
-    public static final ModConfigSpec.DoubleValue MAX_CHARGE_ROT_SPEED = BUILDER
-            .comment("At what speed should the maximum charge rate should be")
-            .defineInRange("maxChargeRotSpeed", 256, 0, Double.MAX_VALUE);
+    public static final ModConfigSpec.IntValue HEAL_TIME = BUILDER
+            .comment("Amount of ticks for the pokemons to heal")
+            .defineInRange("healTime", 24, 1, Integer.MAX_VALUE);
+
+    public static final ModConfigSpec.DoubleValue MAX_HEAL_ROT_SPEED = BUILDER
+            .comment("At what speed should the maximum healing rate should be")
+            .defineInRange("maxHealRotSpeed", 256, 0, Double.MAX_VALUE);
 
     public static final ModConfigSpec.DoubleValue MIN_ACTIVATION_SPEED = BUILDER
             .comment("Minimum speed required for the MHM to activate")
@@ -29,18 +33,21 @@ public class ServerConfig {
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static double stressImpact;
-    public static double maxChargeRotSpeed;
+    public static double maxHealRotSpeed;
     public static double minActivationSpeed;
+    public static int healTime;
 
     static void onLoad(final ModConfigEvent event) {
         stressImpact = STRESS_IMPACT.get();
-        maxChargeRotSpeed = MAX_CHARGE_ROT_SPEED.get();
+        maxHealRotSpeed = MAX_HEAL_ROT_SPEED.get();
         minActivationSpeed = MIN_ACTIVATION_SPEED.get();
+        healTime = HEAL_TIME.get();
     }
 
     static void onReload(final ModConfigEvent event) {
         stressImpact = STRESS_IMPACT.get();
-        maxChargeRotSpeed = MAX_CHARGE_ROT_SPEED.get();
+        maxHealRotSpeed = MAX_HEAL_ROT_SPEED.get();
         minActivationSpeed = MIN_ACTIVATION_SPEED.get();
+        healTime = HEAL_TIME.get();
     }
 }
