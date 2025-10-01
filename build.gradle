@@ -111,7 +111,6 @@ dependencies {
     }
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
-//    runtimeOnly "curse.maven:journeymap-32274:6689206"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

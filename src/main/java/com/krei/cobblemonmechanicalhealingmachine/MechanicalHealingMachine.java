@@ -1,6 +1,8 @@
 package com.krei.cobblemonmechanicalhealingmachine;
 
 import com.cobblemon.mod.common.CobblemonItems;
+import com.krei.cobblemonmechanicalhealingmachine.ponder.PonderScenes;
+import net.createmod.ponder.foundation.PonderIndex;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.SoundType;
@@ -100,6 +102,7 @@ public class MechanicalHealingMachine {
     }
 
     public static void clientInit(final FMLClientSetupEvent event) {
+        PonderIndex.addPlugin(new PonderScenes());
         BlockEntityRenderers.register(
                 HEALING_MACHINE_BLOCK_ENTITY.get(),
                 MechHealingMachineRenderer::new
