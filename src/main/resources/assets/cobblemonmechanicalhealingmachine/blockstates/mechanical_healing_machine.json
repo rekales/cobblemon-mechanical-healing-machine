@@ -16,63 +16,63 @@
       "y": 270
     },
     "facing=south,natural=false,charge=1": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_1"
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0"
     },
     "facing=west,natural=false,charge=1": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_1",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 90
     },
     "facing=north,natural=false,charge=1": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_1",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 180
     },
     "facing=east,natural=false,charge=1": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_1",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 270
     },
     "facing=south,natural=false,charge=2": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_2"
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0"
     },
     "facing=west,natural=false,charge=2": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_2",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 90
     },
     "facing=north,natural=false,charge=2": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_2",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 180
     },
     "facing=east,natural=false,charge=2": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_2",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 270
     },
     "facing=south,natural=false,charge=3": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_3"
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0"
     },
     "facing=west,natural=false,charge=3": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_3",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 90
     },
     "facing=north,natural=false,charge=3": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_3",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 180
     },
     "facing=east,natural=false,charge=3": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_3",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 270
     },
     "facing=south,natural=false,charge=4": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_4"
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0"
     },
     "facing=west,natural=false,charge=4": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_4",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 90
     },
     "facing=north,natural=false,charge=4": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_4",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 180
     },
     "facing=east,natural=false,charge=4": {
-      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_4",
+      "model": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine_0",
       "y": 270
     },
     "facing=south,natural=false,charge=5": {

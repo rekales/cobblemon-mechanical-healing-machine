@@ -111,6 +111,7 @@ dependencies {
     }
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
+    implementation "curse.maven:jade-324717:6853386"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
