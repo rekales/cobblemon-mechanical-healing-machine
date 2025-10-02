@@ -93,34 +93,35 @@ public class PonderScenes implements PonderPlugin {
                 false
         );
         scene.idle(10);
-        scene.overlay().showText(50)
+        scene.overlay().showText(60)
                 .placeNearTarget()
                 .pointAt(util.select().position(2,2,2).getCenter())
                 .text("Blue means its ready for use");
-        scene.idle(60);
+        scene.idle(70);
 
         // TODO: Add pokeballs
+        // NOTE: Seems unnecessary
 //        scene.world().modifyBlockEntity(
 //                new BlockPos(2,2,2),
 //                MechHealingMachineBlockEntity.class,
 //
 //                );
-        scene.world().modifyBlock(
-                new BlockPos(2,2,2),
-                state -> state.setValue(MechHealingMachineBlock.CHARGE_LEVEL, MechHealingMachineBlock.MAX_CHARGE_LEVEL+1),
-                false
-        );
-        scene.idle(5);
-        scene.overlay().showText(60)
-                .placeNearTarget()
-                .pointAt(util.select().position(2,2,2).getCenter())
-                .text("And green means it's currently healing pokemons");
-        scene.idle(70);
+//        scene.world().modifyBlock(
+//                new BlockPos(2,2,2),
+//                state -> state.setValue(MechHealingMachineBlock.CHARGE_LEVEL, MechHealingMachineBlock.MAX_CHARGE_LEVEL+1),
+//                false
+//        );
+//        scene.idle(5);
+//        scene.overlay().showText(60)
+//                .placeNearTarget()
+//                .pointAt(util.select().position(2,2,2).getCenter())
+//                .text("And green means it's currently healing pokemons");
+//        scene.idle(70);
 
         scene.overlay().showText(80)
                 .attachKeyFrame()
                 .placeNearTarget()
                 .text("The speed of healing depends on how fast the rotational speed is");
-        scene.idle(40);
+        scene.idle(60);
     }
 }

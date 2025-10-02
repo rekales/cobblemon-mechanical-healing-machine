@@ -1,10 +1,8 @@
 package com.krei.cobblemonmechanicalhealingmachine;
 
-import com.cobblemon.mod.common.CobblemonItems;
 import com.krei.cobblemonmechanicalhealingmachine.ponder.PonderScenes;
 import net.createmod.ponder.foundation.PonderIndex;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
-import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.material.PushReaction;
@@ -110,8 +108,6 @@ public class MechanicalHealingMachine {
     }
 
     public static void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {
-        event.remove(CobblemonItems.HEALING_MACHINE.getDefaultInstance(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+//        event.remove(CobblemonItems.HEALING_MACHINE.getDefaultInstance(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
     }
-
-    // TODO: CobblemonVillagerPoiTypes
 }

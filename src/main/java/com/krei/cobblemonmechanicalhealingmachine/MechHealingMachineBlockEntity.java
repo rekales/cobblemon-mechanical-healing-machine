@@ -407,7 +407,9 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
                 }
             } else if (this.healingCharge < this.maxCharge) {
                 // Recharging
-                float chargePerTick = Math.max(0f, Cobblemon.config.getChargeGainedPerTick());
+                double secondsToChargeHealingMachine = Cobblemon.config.getSecondsToChargeHealingMachine();
+                float totalTicks = (float) secondsToChargeHealingMachine * 20;
+                float chargePerTick = totalTicks > 0 ? this.maxCharge/totalTicks : 0;
                 this.healingCharge = Math.min(
                         this.maxCharge,
                         Math.max(0f, this.healingCharge + chargePerTick)

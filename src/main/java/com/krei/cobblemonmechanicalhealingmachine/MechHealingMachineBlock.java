@@ -163,7 +163,7 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
         }
 
         if (!hmbEntity.isActive()) {
-            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.offline")), true);
+            serverPlayerEntity.sendSystemMessage(TextKt.red(Component.translatable(MechanicalHealingMachine.MOD_ID+".healingmachine.offline")), true);
             return InteractionResult.SUCCESS;
         }
 
