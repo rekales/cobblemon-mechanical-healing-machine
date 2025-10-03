@@ -71,15 +71,15 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 
     // Charge level 6 is used only when healing machine is active
     // NOTE: Charge level 7 is used only when healing machine is offline, not on original
-    public static int MAX_CHARGE_LEVEL = 5;
+    public static int MAX_CHARGE_LEVEL = 7;
     public static final IntegerProperty CHARGE_LEVEL = IntegerProperty.create("charge", 0, MAX_CHARGE_LEVEL + 2);
-    public static final BooleanProperty NATURAL = BooleanProperty.create("natural");
+//    public static final BooleanProperty NATURAL = BooleanProperty.create("natural");
 
     public MechHealingMachineBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(HorizontalDirectionalBlock.FACING, Direction.NORTH)
-                .setValue(NATURAL, false)
+//                .setValue(NATURAL, false)
                 .setValue(CHARGE_LEVEL, 0));
     }
 
@@ -118,7 +118,8 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(HorizontalDirectionalBlock.FACING, NATURAL);
+//        builder.add(HorizontalDirectionalBlock.FACING, NATURAL);
+        builder.add(HorizontalDirectionalBlock.FACING);
         builder.add(CHARGE_LEVEL);
     }
 

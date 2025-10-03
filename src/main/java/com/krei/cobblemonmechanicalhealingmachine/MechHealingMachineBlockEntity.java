@@ -172,8 +172,10 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             } else if (this.isInUse()) {
                 chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1;
             } else {
-                // TODO: Rotation speed calculations
-                chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL;
+                float rotSpeed = Math.abs(this.getSpeed());
+                chargeLevel = (int) (Math.min(1, Math.max(0,
+                        (rotSpeed-ServerConfig.minActivationSpeed)/(ServerConfig.maxHealRotSpeed-ServerConfig.minActivationSpeed))) *
+                                MechHealingMachineBlock.MAX_CHARGE_LEVEL);
             }
 
             int currentCharge = state.getValue(MechHealingMachineBlock.CHARGE_LEVEL);
@@ -201,7 +203,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     }
 
     public boolean isInUse() {
-        return currentUser != null;
+        return currentUser != null && !pokeBalls.isEmpty();
     }
 
 
