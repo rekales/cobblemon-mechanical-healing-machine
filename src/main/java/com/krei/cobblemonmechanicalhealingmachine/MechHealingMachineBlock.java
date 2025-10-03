@@ -166,11 +166,6 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS;
         }
 
-        if (hmbEntity.isInUse()) {
-            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyinuse")), true);
-            return InteractionResult.SUCCESS;
-        }
-
         if (PlayerExtensionsKt.isInBattle(serverPlayerEntity)) {
             serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.inbattle")), true);
             return InteractionResult.SUCCESS;
@@ -187,19 +182,14 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS;
         }
 
-        // TODO: Remove
-        if (MechHealingMachineBlockEntity.isUsingHealer(player)) {
-            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyhealing")), true);
-            return InteractionResult.SUCCESS;
-        }
-
-        if (hmbEntity.canHeal(party)) {
+        if (!hmbEntity.isInUse()) {
             hmbEntity.activate(player.getUUID(), party);
             serverPlayerEntity.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healing")), true);
-        } else {
-            // TODO: Remove
-            float neededCharge = PlayerExtensionsKt.party(serverPlayerEntity).getHealingRemainderPercent() - hmbEntity.getHealingCharge();
-            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.notenoughcharge", neededCharge + "%")), true);
+        } else if (MechHealingMachineBlockEntity.isUsingHealer(player)) {  // Retrieve pokemons
+            hmbEntity.deactivate();
+        } else {  // Another player tried to use occupied healer
+            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyinuse")), true);
+            return InteractionResult.SUCCESS;
         }
 
         for (Pokemon pokemon : party) {
@@ -208,28 +198,14 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
         return InteractionResult.CONSUME;
     }
 
-    // NOTE: Big reminder for testing, creative mode placed healing machines have infinite charge
-    @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
-        super.setPlacedBy(level, pos, state, placer, stack);
-
-        if (!level.isClientSide() && placer instanceof ServerPlayer serverPlayer && serverPlayer.isCreative()) {
-            BlockEntity blockEntity = level.getBlockEntity(pos);
-            if (!(blockEntity instanceof MechHealingMachineBlockEntity healingMachine)) {
-                return;
-            }
-            healingMachine.setInfinite(true);
-        }
-    }
-
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (!(blockEntity instanceof MechHealingMachineBlockEntity healingMachine)) {
             return;
         }
-
-        if (random.nextInt(2) == 0 && healingMachine.getHealTimeLeft() > 0 && healingMachine.active) {
+        // TODO: Missing particles
+        if (random.nextInt(2) == 0 && healingMachine.active) {
             double posX = pos.getX() + 0.5 + ((random.nextFloat() * 0.3F) * (random.nextInt(2) > 0 ? 1 : -1));
             double posY = pos.getY() + 0.9;
             double posZ = pos.getZ() + 0.5 + ((random.nextFloat() * 0.3F) * (random.nextInt(2) > 0 ? 1 : -1));

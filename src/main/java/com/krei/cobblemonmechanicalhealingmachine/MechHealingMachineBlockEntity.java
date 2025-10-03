@@ -4,12 +4,14 @@ import com.cobblemon.mod.common.Cobblemon;
 import com.cobblemon.mod.common.CobblemonSounds;
 import com.cobblemon.mod.common.api.pokeball.PokeBalls;
 import com.cobblemon.mod.common.api.storage.party.PartyStore;
+import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
 import com.cobblemon.mod.common.api.text.TextKt;
 import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.pokeball.PokeBall;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.util.*;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import kotlin.collections.CollectionsKt;
 import kotlin.ranges.RangesKt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -29,69 +31,65 @@ import java.util.*;
 // when working with the Create mod and the original class is not extendable.
 // NOTE: All references to HealingMachineBlock is replaced by the mechanical variant
 // NOTE: Companion object turned into usual static variables. Breaks slight parity but makes it more Java-like
-// NOTE: Ended up with a complete overhaul anyway
+/*  NOTE: Ended up with a complete overhaul anyway
+    - Heal by a set amount while the pokemons are in the mhm.
+    - Pokemons stay until retrieved by owner.
+    - Removed pokemon storage variables, relying on the player reference instead. Maybe I'll add a per 5 tick updated cache
+        for rendering though I think it would be unnecessary since in practice only a few will exist.
+    - Removed healing charge and other related variables
+    - Removed infinite checks, unnecessary and let the natural variant have that feature
+    - Removed a lot of unnecessary functions
+    - Removed Data Snapshot, I don't really understand the need for this. I'll just save a player entity reference if needed.
+*/
 public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
-    // NOTE: Will be removed
-    private int healTimeLeft = 0;
-    private float healingCharge = 0.0F;
-    private float maxCharge = 6F;
-
     private UUID currentUser = null;
-    private boolean infinite = false;
     private int currentSignal = 0;
     protected boolean active = false;  // Not on original
-
-    private DataSnapshot dataSnapshot = null;
-
-    private final Map<Integer, PokeBall> pokeBalls = new HashMap<>();
+    private Map<Integer, PokeBall> pokeBallsCache = new HashMap<>();
 
     public MechHealingMachineBlockEntity(BlockPos blockPos, BlockState blockState) {
         super(MechanicalHealingMachine.HEALING_MACHINE_BLOCK_ENTITY.get(), blockPos, blockState);
-        this.maxCharge = RangesKt.coerceAtLeast(Cobblemon.config.getMaxHealerCharge(), 6F);
         this.updateRedstoneSignal();
         this.updateBlockChargeLevel();
     }
 
+    public void updatePokeBallsCache() {
+        if (currentUser != null) {
+            ServerPlayer serverPlayer = PlayerExtensionsKt.getPlayer(currentUser);
+            if (serverPlayer != null) {
+                PlayerPartyStore party = PlayerExtensionsKt.party(serverPlayer);
+                List<Pokemon> partyList = party.toGappyList();
+                for (int index = 0; index < partyList.size(); index++) {
+                    Pokemon pokemon = partyList.get(index);
+                    if (pokemon != null) {
+                        pokeBallsCache.put(index, pokemon.getCaughtBall());
+                    }
+                }
+            } else {
+                // TODO: Account for NPC Entities. Or not, we could just simply not bother
+            }
+        }
+        pokeBalls().clear();
+    }
+
     public Map<Integer, PokeBall> pokeBalls() {
-        return this.pokeBalls;
+        return pokeBallsCache;
     }
 
     public void setUser(UUID user, PartyStore party) {
         this.clearData();
-
-        this.pokeBalls.clear();
-        List<Pokemon> partyList = party.toGappyList();
-        for (int index = 0; index < partyList.size(); index++) {
-            Pokemon pokemon = partyList.get(index);
-            if (pokemon != null) {
-                this.pokeBalls.put(index, pokemon.getCaughtBall());
-            }
-        }
         this.currentUser = user;
-        this.healTimeLeft = ServerConfig.healTime;
-
         markUpdated();
     }
 
-    public boolean canHeal(PartyStore party) {
-        if (Cobblemon.config.getInfiniteHealerCharge() || this.infinite) {
-            return true;
-        }
-        float neededHealthPercent = party.getHealingRemainderPercent();
-        return this.healingCharge >= neededHealthPercent;
-    }
-
+    // Keeping method name parity
     public void activate(UUID user, PartyStore party) {
-        if (!Cobblemon.config.getInfiniteHealerCharge() && this.healingCharge != maxCharge) {
-            float neededHealthPercent = party.getHealingRemainderPercent();
-            this.healingCharge = Math.max(0, Math.min(this.healingCharge - neededHealthPercent, maxCharge));
-            this.updateRedstoneSignal();
-        }
-
         this.setUser(user, party);
         alreadyHealing.add(user);
-        updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1);
+        updateBlockChargeLevel();
+        updatePokeBallsCache();
+
         if (level == null || level.isClientSide()) return;
         WorldExtensionsKt.playSoundServer(
                 level,
@@ -103,37 +101,16 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         );
     }
 
-    // TODO: Remove, replace with logic on tick()
-    public void completeHealing() {
-        if (currentUser == null) {
-            clearData();
-            return;
-        }
-        ServerPlayer serverPlayer = PlayerExtensionsKt.getPlayer(currentUser);
-        if (serverPlayer != null) {
-            PartyStore party = PlayerExtensionsKt.party(serverPlayer);
-            party.heal();
-            serverPlayer.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healed")), true);
-        } else {
-            List<Entity> entities = level.getEntities((Entity) null, AABB.ofSize(BlockPosExtensionsKt.toVec3d(getBlockPos()), 10.0, 10.0, 10.0),
-                    entity -> entity.getUUID().equals(currentUser) && entity instanceof NPCEntity);
-
-            NPCEntity npc = entities.isEmpty() ? null : (NPCEntity) entities.get(0);
-            if (npc != null && npc.getParty() != null) {
-                npc.getParty().heal();
-                npc.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healed")));
-            }
-        }
-        updateBlockChargeLevel();
+    public void deactivate() {
         clearData();
+        updateBlockChargeLevel();
+        updatePokeBallsCache();
     }
 
-    // Modified name and params
+    // Used parent read methods instead of readAdditional
     @Override
     public void read(CompoundTag compoundTag, HolderLookup.Provider registryLookup, boolean clientPacket) {
         super.read(compoundTag, registryLookup, clientPacket);
-
-        this.pokeBalls.clear();
 
         if (compoundTag.hasUUID(DataKeys.HEALER_MACHINE_USER)) {
             this.currentUser = compoundTag.getUUID(DataKeys.HEALER_MACHINE_USER);
@@ -155,26 +132,14 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
                 PokeBall pokeBall = PokeBalls.INSTANCE.getPokeBall(ResourceLocation.parse(pokeBallId));
                 if (pokeBall != null) {
-                    this.pokeBalls.put(actualIndex, pokeBall);
+                    this.pokeBallsCache.put(actualIndex, pokeBall);
                 }
                 index++;
             }
         }
-
-        if (compoundTag.contains(DataKeys.HEALER_MACHINE_TIME_LEFT)) {
-            this.healTimeLeft = compoundTag.getInt(DataKeys.HEALER_MACHINE_TIME_LEFT);
-        }
-
-        if (compoundTag.contains(DataKeys.HEALER_MACHINE_CHARGE)) {
-            this.healingCharge = Math.min(Math.max(0f, compoundTag.getFloat(DataKeys.HEALER_MACHINE_CHARGE)), maxCharge);
-        }
-
-        if (compoundTag.contains(DataKeys.HEALER_MACHINE_INFINITE)) {
-            this.infinite = compoundTag.getBoolean(DataKeys.HEALER_MACHINE_INFINITE);
-        }
     }
 
-    // Modified name, params, and super method invocation to bottom
+    // Used parent write methods instead of saveAdditional
     @Override
     public void write(CompoundTag compoundTag, HolderLookup.Provider registryLookup, boolean clientPackets) {
         if (this.currentUser != null) {
@@ -193,10 +158,6 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             compoundTag.remove(DataKeys.HEALER_MACHINE_POKEBALLS);
         }
 
-        compoundTag.putInt(DataKeys.HEALER_MACHINE_TIME_LEFT, this.healTimeLeft);
-        compoundTag.putFloat(DataKeys.HEALER_MACHINE_CHARGE, this.healingCharge);
-        compoundTag.putBoolean(DataKeys.HEALER_MACHINE_INFINITE, this.infinite);
-
         super.write(compoundTag, registryLookup, clientPackets);
     }
 
@@ -211,54 +172,40 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return super.saveWithFullMetadata(provider);
     }
 
-    // NOTE: Invoker mixin unless there's a good reason not to.
-//    @Override
-//    public void setRemoved() {
-//        this.snapshotAndClearData();
-//        super.setRemoved();
-//    }
-
-    @Override
-    public void clearRemoved() {
-        this.restoreSnapshot();
-        super.clearRemoved();
-    }
-
     private void updateRedstoneSignal() {
-        if (Cobblemon.config.getInfiniteHealerCharge() || this.infinite) {
-            this.currentSignal = MAX_REDSTONE_SIGNAL;
-        } else {
-            int remainder = (int)((this.healingCharge / maxCharge) * 100) / 10;
-            this.currentSignal = Math.min(remainder, MAX_REDSTONE_SIGNAL);
-        }
+        float rotSpeed = Math.abs(this.getSpeed());
+        int signal = (int) (Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed)) * MAX_REDSTONE_SIGNAL);
+        this.currentSignal = Math.min(signal, MAX_REDSTONE_SIGNAL);
     }
 
-    private void updateBlockChargeLevel(Integer level) {
+    private void updateBlockChargeLevel() {
         Level world = this.level;
         if (world == null || world.isClientSide()) return;
 
-        int chargeLevel;
-        if (level != null) {
-            chargeLevel = level;
-        } else if (Cobblemon.config.getInfiniteHealerCharge() || this.infinite) {
-            chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL;
-        } else {
-            chargeLevel = (int)Math.floor((healingCharge / maxCharge) * MechHealingMachineBlock.MAX_CHARGE_LEVEL);
-        }
-
-        BlockState state = world.getBlockState(getBlockPos());
+        BlockState state = world.getBlockState(this.getBlockPos());
         if (state.getBlock() instanceof MechHealingMachineBlock) {
+            int chargeLevel;
+            if (!this.active) {
+                chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2;
+            } else if (this.isInUse()) {
+                chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1;
+            } else {
+                // TODO: Rotation speed calculations
+                chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL;
+            }
+
+            if (world.getGameTime()%20 == 0) {
+//                MechanicalHealingMachine.LOGGER.debug(chargeLevel+"");
+//                MechanicalHealingMachine.LOGGER.debug(state.getValue(MechHealingMachineBlock.CHARGE_LEVEL)+"");
+//                MechanicalHealingMachine.LOGGER.debug(this.pokeBalls().entrySet()+"");
+            }
+
             int currentCharge = state.getValue(MechHealingMachineBlock.CHARGE_LEVEL);
             if (chargeLevel != currentCharge) {
-                MechanicalHealingMachine.LOGGER.debug("tick " + chargeLevel);
                 world.setBlockAndUpdate(getBlockPos(), state.setValue(MechHealingMachineBlock.CHARGE_LEVEL, chargeLevel));
+                this.markUpdated();
             }
         }
-    }
-
-    // Overload for Kotlin default argument
-    private void updateBlockChargeLevel() {
-        updateBlockChargeLevel(null);
     }
 
     private void markUpdated() {
@@ -268,36 +215,13 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         }
     }
 
-    private void snapshotAndClearData() {
-        this.dataSnapshot = new DataSnapshot(
-                this.currentUser,
-                new HashMap<>(this.pokeBalls),
-                this.healTimeLeft
-        );
-        this.clearData();
-    }
-
     private void clearData() {
         if (this.currentUser != null) {
             alreadyHealing.remove(this.currentUser);
         }
         this.currentUser = null;
-        this.pokeBalls.clear();
-        this.healTimeLeft = 0;
         markUpdated();
     }
-
-    private void restoreSnapshot() {
-        if (this.dataSnapshot != null) {
-            this.pokeBalls.clear();
-            this.currentUser = this.dataSnapshot.currentUser;
-            this.pokeBalls.putAll(this.dataSnapshot.pokeBalls);
-            this.healTimeLeft = this.dataSnapshot.healTimeLeft;
-        }
-    }
-
-    private record DataSnapshot(UUID currentUser, Map<Integer, PokeBall> pokeBalls, int healTimeLeft) { }
-
 
     // Some getter setter boilerplate that's automatically handled by kotlin
 
@@ -307,30 +231,6 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
     public UUID getCurrentUser() {
         return currentUser;
-    }
-
-    public int getHealTimeLeft() {
-        return healTimeLeft;
-    }
-
-    public void setHealTimeLeft(int healTimeLeft) {
-        this.healTimeLeft = healTimeLeft;
-    }
-
-    public float getHealingCharge() {
-        return healingCharge;
-    }
-
-    public void setHealingCharge(float healingCharge) {
-        this.healingCharge = healingCharge;
-    }
-
-    public boolean isInfinite() {
-        return infinite;
-    }
-
-    public void setInfinite(boolean infinite) {
-        this.infinite = infinite;
     }
 
     public boolean isInUse() {
@@ -367,35 +267,42 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         super.tick();
 
         Level world = this.getLevel();
-        BlockState state = this.getBlockState();
-        if (world == null || world.isClientSide()) return;
+        if (world == null || world.isClientSide()) {
+            this.sendData();
+            return;
+        }
 
         this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
-        if (!this.active) {  // NOTE: Added for minimum speed checks
-            this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
-            this.markUpdated();
-        } else {
-            if (this.isInUse()) {
-                if (this.healTimeLeft > 0) {
-                    // NOTE: Added for Create Kinetics integration
-                    // NOTE: Using chance to tick instead of decimal values because I don't want to deviate too much
-                    // NOTE: This will cause inconsistent results but not immediately noticeable
+        if (this.active && world.getGameTime()%20 == 0) {
+            if (currentUser != null) {  // Is in use
+                ServerPlayer serverPlayer = PlayerExtensionsKt.getPlayer(currentUser);
+                if (serverPlayer != null) {
+                    PartyStore party = PlayerExtensionsKt.party(serverPlayer);
+
                     float rotSpeed = Math.abs(this.getSpeed());
-                    double chance = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
-                    if (world.random.nextDouble() < chance ) {
-                        this.healTimeLeft--;
+                    double healRate = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed)) * ServerConfig.maxHealRate;
+                    int numHealRate = (int) healRate;
+                    // Chance to heal more, cuz no decimal health.
+                    numHealRate = numHealRate + (world.random.nextDouble() < healRate-numHealRate ? 1 : 0);
+
+                    for(Pokemon pokemon : party) {
+                        int health = pokemon.getCurrentHealth();
+                        health = Math.min(pokemon.getMaxHealth(), health+numHealRate);
+                        pokemon.setCurrentHealth(health);
                     }
-                    this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1);
-                } else {
-                    this.completeHealing();
+
+                    if (CollectionsKt.none(party, Pokemon::canBeHealed)) {  // Completely Healed, ned notif. TODO: Send once, maybe highlight block
+                        serverPlayer.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyhealed")), true);
+                        this.deactivate();
+                    }
                 }
             } else {
-                this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL);
+                // TODO: Handle NPC Entities here instead
+//                clearData();
             }
-            this.updateRedstoneSignal();
-            this.markUpdated();
         }
+        this.updateRedstoneSignal();
+        this.updateBlockChargeLevel();
         this.sendData();
-        this.healingCharge = this.maxCharge;  // Full charge always
     }
 }
