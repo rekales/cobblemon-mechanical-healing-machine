@@ -71,17 +71,13 @@ public class MechHealingMachineRenderer extends KineticBlockEntityRenderer<MechH
         poseStack.mulPose(Axis.YP.rotationDegrees(-yRot));
         poseStack.scale(0.65F, 0.65F, 0.65F);
 
-
-        if (blockEntity.getLevel().getGameTime()%20==0)
-            MechanicalHealingMachine.LOGGER.debug(blockEntity.pokeBalls()+"");
-
         int index = 0;
         for (var entry : blockEntity.pokeBalls().entrySet()) {
             poseStack.pushPose();
             double[] offset = OFFSETS.get(index);
             poseStack.translate(offset[0], 0.4, offset[1]);
             Minecraft.getInstance().getItemRenderer().renderStatic(
-                    entry.getValue().stack(1),  // Kotlin doesn't automatically provide empty overloads
+                    entry.getValue().stack(1),
                     ItemDisplayContext.GROUND,
                     packedLight,
                     packedOverlay,
