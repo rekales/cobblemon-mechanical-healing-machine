@@ -193,4 +193,6 @@ public class MechanicalHealingMachine {
             trades.get(5).add(new CobblemonTradeOffers.TradeOffer(new ItemCost(Items.EMERALD, 8), new ItemStack(CobblemonItems.VIVICHOKE_DIP, 1), 12, 30, Optional.of(new ItemCost(Items.GLASS_BOTTLE)), 0.05F));
         }
     }
+
+    // TODO: Intercept battle start when pokemons are healing
 }

@@ -71,7 +71,6 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 
     // Charge level 6 is used only when healing machine is active
     // NOTE: Charge level 7 is used only when healing machine is offline, not on original
-    // TODO: Minimum charge level
     public static int MAX_CHARGE_LEVEL = 5;
     public static final IntegerProperty CHARGE_LEVEL = IntegerProperty.create("charge", 0, MAX_CHARGE_LEVEL + 2);
     public static final BooleanProperty NATURAL = BooleanProperty.create("natural");
@@ -188,6 +187,7 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS;
         }
 
+        // TODO: Remove
         if (MechHealingMachineBlockEntity.isUsingHealer(player)) {
             serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyhealing")), true);
             return InteractionResult.SUCCESS;
@@ -197,6 +197,7 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             hmbEntity.activate(player.getUUID(), party);
             serverPlayerEntity.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healing")), true);
         } else {
+            // TODO: Remove
             float neededCharge = PlayerExtensionsKt.party(serverPlayerEntity).getHealingRemainderPercent() - hmbEntity.getHealingCharge();
             serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.notenoughcharge", neededCharge + "%")), true);
         }

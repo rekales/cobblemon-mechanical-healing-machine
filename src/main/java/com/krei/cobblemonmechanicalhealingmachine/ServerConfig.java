@@ -24,11 +24,6 @@ public class ServerConfig {
             .comment("Minimum speed required for the MHM to activate")
             .defineInRange("minActivationSpeed", 16, 0, Double.MAX_VALUE);
 
-    // TODO: Implement
-    public static final ModConfigSpec.BooleanValue HM_DROPS_MHM = BUILDER
-            .comment("Should the healing machine drop the mhm")
-            .define("hmDropsMhm", true);
-
 
     static final ModConfigSpec SPEC = BUILDER.build();
 

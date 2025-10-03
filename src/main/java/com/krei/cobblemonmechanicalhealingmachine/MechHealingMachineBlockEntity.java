@@ -29,14 +29,17 @@ import java.util.*;
 // when working with the Create mod and the original class is not extendable.
 // NOTE: All references to HealingMachineBlock is replaced by the mechanical variant
 // NOTE: Companion object turned into usual static variables. Breaks slight parity but makes it more Java-like
+// NOTE: Ended up with a complete overhaul anyway
 public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
-    private UUID currentUser = null;
+    // NOTE: Will be removed
     private int healTimeLeft = 0;
     private float healingCharge = 0.0F;
+    private float maxCharge = 6F;
+
+    private UUID currentUser = null;
     private boolean infinite = false;
     private int currentSignal = 0;
-    private float maxCharge = 6F;
     protected boolean active = false;  // Not on original
 
     private DataSnapshot dataSnapshot = null;
@@ -100,6 +103,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         );
     }
 
+    // TODO: Remove, replace with logic on tick()
     public void completeHealing() {
         if (currentUser == null) {
             clearData();
@@ -207,7 +211,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return super.saveWithFullMetadata(provider);
     }
 
-    // TODO: Invoker unless there's a good reason not to.
+    // NOTE: Invoker mixin unless there's a good reason not to.
 //    @Override
 //    public void setRemoved() {
 //        this.snapshotAndClearData();
@@ -232,9 +236,6 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private void updateBlockChargeLevel(Integer level) {
         Level world = this.level;
         if (world == null || world.isClientSide()) return;
-
-        // TODO: Delete this debug shit
-        this.setInfinite(false);
 
         int chargeLevel;
         if (level != null) {
@@ -369,55 +370,32 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         BlockState state = this.getBlockState();
         if (world == null || world.isClientSide()) return;
 
-        if (!state.getValue(MechHealingMachineBlock.NATURAL)) {  // Mechanical Healer Ticker
-            this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
-            if (!this.active) {  // NOTE: Added for minimum speed checks
-                this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
-                this.markUpdated();
-            } else {
-                if (this.isInUse()) {
-                    if (this.healTimeLeft > 0) {
-                        // NOTE: Added for Create Kinetics integration
-                        // NOTE: Using chance to tick instead of decimal values because I don't want to deviate too much
-                        // NOTE: This will cause inconsistent results but not immediately noticeable
-                        float rotSpeed = Math.abs(this.getSpeed());
-                        double chance = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
-                        if (world.random.nextDouble() < chance ) {
-                            this.healTimeLeft--;
-                        }
-                        this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1);
-                    } else {
-                        this.completeHealing();
-                    }
-                } else {
-                    this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL);
-                }
-                this.updateRedstoneSignal();
-                this.markUpdated();
-            }
-            this.sendData();
-            this.healingCharge = this.maxCharge;  // Full charge always
-        } else {  // Normal variant ticker if natural
+        this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
+        if (!this.active) {  // NOTE: Added for minimum speed checks
+            this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 2);
+            this.markUpdated();
+        } else {
             if (this.isInUse()) {
-                // Healing progression
                 if (this.healTimeLeft > 0) {
-                    this.healTimeLeft--;
+                    // NOTE: Added for Create Kinetics integration
+                    // NOTE: Using chance to tick instead of decimal values because I don't want to deviate too much
+                    // NOTE: This will cause inconsistent results but not immediately noticeable
+                    float rotSpeed = Math.abs(this.getSpeed());
+                    double chance = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
+                    if (world.random.nextDouble() < chance ) {
+                        this.healTimeLeft--;
+                    }
+                    this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1);
                 } else {
                     this.completeHealing();
                 }
-            } else if (this.healingCharge < this.maxCharge) {
-                // Recharging
-                double secondsToChargeHealingMachine = Cobblemon.config.getSecondsToChargeHealingMachine();
-                float totalTicks = (float) secondsToChargeHealingMachine * 20;
-                float chargePerTick = totalTicks > 0 ? this.maxCharge/totalTicks : 0;
-                this.healingCharge = Math.min(
-                        this.maxCharge,
-                        Math.max(0f, this.healingCharge + chargePerTick)
-                );
-                this.updateBlockChargeLevel();
-                this.updateRedstoneSignal();
-                this.markUpdated();
+            } else {
+                this.updateBlockChargeLevel(MechHealingMachineBlock.MAX_CHARGE_LEVEL);
             }
+            this.updateRedstoneSignal();
+            this.markUpdated();
         }
+        this.sendData();
+        this.healingCharge = this.maxCharge;  // Full charge always
     }
 }

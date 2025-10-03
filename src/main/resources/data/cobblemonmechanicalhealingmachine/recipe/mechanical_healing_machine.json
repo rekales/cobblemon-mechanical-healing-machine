@@ -13,7 +13,7 @@
       "tag": "c:ingots/iron"
     },
     "D": {
-      "tag": "create:cogwheel"
+      "item": "create:cogwheel"
     },
     "R": {
       "item": "cobblemon:revive"

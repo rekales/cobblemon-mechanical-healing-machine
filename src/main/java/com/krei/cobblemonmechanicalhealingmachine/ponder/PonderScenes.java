@@ -99,7 +99,6 @@ public class PonderScenes implements PonderPlugin {
                 .text("Blue means its ready for use");
         scene.idle(70);
 
-        // TODO: Add pokeballs
         // NOTE: Seems unnecessary
 //        scene.world().modifyBlockEntity(
 //                new BlockPos(2,2,2),
