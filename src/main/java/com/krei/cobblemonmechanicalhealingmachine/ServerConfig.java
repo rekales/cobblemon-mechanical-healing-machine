@@ -12,9 +12,9 @@ public class ServerConfig {
             .comment("Stress impact per unit of speed")
             .defineInRange("mhmStressImpact", 8f, 0, Double.MAX_VALUE);
 
-    public static final ModConfigSpec.IntValue MAX_HEAL_RATE = BUILDER
-            .comment("Amount healed every second")
-            .defineInRange("maxHealRate", 4, 1, Integer.MAX_VALUE);
+    public static final ModConfigSpec.DoubleValue MAX_HEAL_RATE = BUILDER
+            .comment("Amount healed every tick per rpm")
+            .defineInRange("maxHealRate", 0.05, 0.001, Double.MAX_VALUE);
 
     public static final ModConfigSpec.DoubleValue MAX_HEAL_ROT_SPEED = BUILDER
             .comment("At what speed should the maximum healing rate should be")
@@ -30,7 +30,7 @@ public class ServerConfig {
     public static double stressImpact;
     public static double maxHealRotSpeed;
     public static double minActivationSpeed;
-    public static int maxHealRate;
+    public static double maxHealRate;
 
     static void onLoad(final ModConfigEvent event) {
         stressImpact = STRESS_IMPACT.get();

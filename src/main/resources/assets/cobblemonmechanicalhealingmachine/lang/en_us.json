@@ -9,7 +9,7 @@
   "cobblemonmechanicalhealingmachine.ponder.mechanical_healing_machine.text_4": "And green means it's currently being used",
   "cobblemonmechanicalhealingmachine.ponder.mechanical_healing_machine.text_5": "The speed of healing depends on how fast the rotational speed is",
 
-  "cobblemonmechanicalhealingmachine.healingmachine.offline": "This machine needs more rotational speed to heal your party!",
+  "cobblemonmechanicalhealingmachine.healingmachine.offline": "Pokemons will not be healed until power is provided",
 
   "entity.minecraft.villager.cobblemonmechanicalhealingmachine.nurse_copy": "Nurse"
 }

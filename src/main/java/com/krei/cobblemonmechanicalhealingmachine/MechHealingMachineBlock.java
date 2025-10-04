@@ -1,3 +1,11 @@
+/*
+ * Copyright (C) 2023 Cobblemon Contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 package com.krei.cobblemonmechanicalhealingmachine;
 
 import com.cobblemon.mod.common.Cobblemon;
@@ -162,11 +170,6 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS; // just in case
         }
 
-        if (!hmbEntity.isActive()) {
-            serverPlayerEntity.sendSystemMessage(TextKt.red(Component.translatable(MechanicalHealingMachine.MOD_ID+".healingmachine.offline")), true);
-            return InteractionResult.SUCCESS;
-        }
-
         if (PlayerExtensionsKt.isInBattle(serverPlayerEntity)) {
             serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.inbattle")), true);
             return InteractionResult.SUCCESS;
@@ -180,7 +183,11 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 
         if (!hmbEntity.isInUse()) {
             hmbEntity.activate(player.getUUID(), party);
-            serverPlayerEntity.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healing")), true);
+            if (!hmbEntity.isActive()) {
+                serverPlayerEntity.sendSystemMessage(TextKt.red(Component.translatable(MechanicalHealingMachine.MOD_ID+".healingmachine.offline")), true);
+            } else {
+                serverPlayerEntity.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healing")), true);
+            }
         } else if (MechHealingMachineBlockEntity.isUsingHealer(player)) {  // Retrieve pokemons
             hmbEntity.deactivate();
         } else {  // Another player tried to use occupied healer

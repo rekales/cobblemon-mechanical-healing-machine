@@ -1,16 +1,20 @@
+/*
+ * Copyright (C) 2023 Cobblemon Contributors
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 package com.krei.cobblemonmechanicalhealingmachine;
 
-import com.cobblemon.mod.common.Cobblemon;
-import com.cobblemon.mod.common.CobblemonSounds;
 import com.cobblemon.mod.common.api.pokeball.PokeBalls;
 import com.cobblemon.mod.common.api.storage.party.PartyStore;
-import com.cobblemon.mod.common.api.storage.party.PlayerPartyStore;
-import com.cobblemon.mod.common.api.text.TextKt;
-import com.cobblemon.mod.common.entity.npc.NPCEntity;
 import com.cobblemon.mod.common.pokeball.PokeBall;
 import com.cobblemon.mod.common.pokemon.Pokemon;
 import com.cobblemon.mod.common.util.*;
 import com.simibubi.create.content.kinetics.base.KineticBlockEntity;
+import kotlin.collections.CollectionsKt;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -41,6 +45,9 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private int currentSignal = 0;
     protected boolean active = false;  // Not on original
     private Map<Integer, PokeBall> pokeBalls = new HashMap<>();
+    private double healedAmountNum = 0;  // No need to sync
+    private double healedAmountPercentMult = 0;  // No need to sync
+    private int ticksHealing = 0;  // No need to sync
 
     public MechHealingMachineBlockEntity(BlockPos blockPos, BlockState blockState) {
         super(MechanicalHealingMachine.HEALING_MACHINE_BLOCK_ENTITY.get(), blockPos, blockState);
@@ -71,19 +78,22 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         alreadyHealing.add(user);
         updateBlockChargeLevel();
 
+        double minPercentHealth = 1;
         List<Pokemon> partyList = party.toGappyList();
         for (int index = 0; index < partyList.size(); index++) {
             Pokemon pokemon = partyList.get(index);
             if (pokemon != null) {
                 pokeBalls.put(index, pokemon.getCaughtBall());
+                minPercentHealth = Math.min(minPercentHealth, (double) pokemon.getCurrentHealth()/pokemon.getMaxHealth());
             }
         }
+        this.healedAmountPercentMult = minPercentHealth;
 
         if (level == null || level.isClientSide()) return;
         WorldExtensionsKt.playSoundServer(
                 level,
                 BlockPosExtensionsKt.toVec3d(getBlockPos()),
-                CobblemonSounds.HEALING_MACHINE_ACTIVE,
+                MechanicalHealingMachine.MHM_TUNE.value(),
                 SoundSource.NEUTRAL,
                 1f,
                 1f
@@ -92,8 +102,16 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
     public void deactivate() {
         clearData();
-        pokeBalls().clear();
         updateBlockChargeLevel();
+        if (level == null || level.isClientSide()) return;
+        WorldExtensionsKt.playSoundServer(
+                level,
+                BlockPosExtensionsKt.toVec3d(getBlockPos()),
+                MechanicalHealingMachine.MHM_SHOOP.value(),
+                SoundSource.NEUTRAL,
+                1f,
+                1f
+        );
     }
 
     // Used parent read methods instead of readAdditional
@@ -190,6 +208,10 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             alreadyHealing.remove(this.currentUser);
         }
         this.currentUser = null;
+        this.pokeBalls.clear();
+        this.healedAmountNum = 0;
+        this.healedAmountPercentMult = 0;
+        this.ticksHealing = 0;
     }
 
     // Some getter setter boilerplate that's automatically handled by kotlin
@@ -242,34 +264,42 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         }
 
         this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
-        if (this.active && world.getGameTime()%20 == 0) {
-            if (currentUser != null) {  // Is in use
+        if (currentUser != null) {  // Is in use
+            if (this.active) {
+
                 ServerPlayer serverPlayer = PlayerExtensionsKt.getPlayer(currentUser);
                 if (serverPlayer != null) {
                     PartyStore party = PlayerExtensionsKt.party(serverPlayer);
 
                     float rotSpeed = Math.abs(this.getSpeed());
-                    double healRate = Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed)) * ServerConfig.maxHealRate;
-                    int numHealRate = (int) healRate;
-                    // Chance to heal more, cuz no decimal health.
-                    numHealRate = numHealRate + (world.random.nextDouble() < healRate-numHealRate ? 1 : 0);
+                    double percentHealMult = 0.0016 + 0.04 * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
+                    double numHeal = ServerConfig.maxHealRate * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
+
+                    healedAmountPercentMult += percentHealMult;
+                    healedAmountNum += numHeal;
+                    ticksHealing++;
 
                     for(Pokemon pokemon : party) {
                         if (pokemon.isFainted()) {
                             pokemon.setFaintedTimer(-1);
                         }
 
-                        int health = pokemon.getCurrentHealth();
-                        health = Math.min(pokemon.getMaxHealth(), health+numHealRate);
-                        pokemon.setCurrentHealth(health);
-                        if (pokemon.getCurrentHealth() >= pokemon.getMaxHealth())
+                        int pokemonHealth = (int) Math.max(healedAmountNum, healedAmountPercentMult*pokemon.getMaxHealth());
+                        if (pokemonHealth > pokemon.getMaxHealth()) {
                             pokemon.heal();
+                        } else if (pokemon.getCurrentHealth() < pokemonHealth) {
+                            pokemon.setCurrentHealth(pokemonHealth);
+                        }
+                    }
+
+                    if (CollectionsKt.none(party, Pokemon::canBeHealed) && ticksHealing > 24) {
+                        this.deactivate();  // Completely healed, return to party
                     }
                 }
-            } else {
-                // TODO: Handle NPC Entities here instead
-                clearData();
             }
+        } else {
+            // TODO: Handle NPC Entities here instead
+            clearData();
         }
         this.updateRedstoneSignal();
         this.updateBlockChargeLevel();

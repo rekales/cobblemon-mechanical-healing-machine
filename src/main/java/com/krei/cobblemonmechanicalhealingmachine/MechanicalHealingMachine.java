@@ -9,18 +9,17 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import net.createmod.ponder.foundation.PonderIndex;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderers;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
 import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.entity.npc.VillagerTrades;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.*;
 import net.minecraft.world.item.trading.ItemCost;
-import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.PushReaction;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
@@ -30,8 +29,6 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -102,7 +99,7 @@ public class MechanicalHealingMachine {
 
     public static final ResourceLocation NURSE_COPY_RL = ResourceLocation.fromNamespaceAndPath(MOD_ID, "nurse_copy");
 
-    public static final DeferredRegister<PoiType> POINTS_OF_INTEREST = DeferredRegister.create(
+    public static final DeferredRegister<PoiType> POINTS_OF_INTERESTS = DeferredRegister.create(
             BuiltInRegistries.POINT_OF_INTEREST_TYPE, MechanicalHealingMachine.MOD_ID
     );
 
@@ -110,7 +107,7 @@ public class MechanicalHealingMachine {
             BuiltInRegistries.VILLAGER_PROFESSION, MechanicalHealingMachine.MOD_ID
     );
 
-    public static final Holder<PoiType> NURSE_COPY_POI = POINTS_OF_INTEREST.register(
+    public static final Holder<PoiType> NURSE_COPY_POI = POINTS_OF_INTERESTS.register(
             "nurse_copy", () -> new PoiType(ImmutableSet.copyOf(
                     HEALING_MACHINE_BLOCK.get().getStateDefinition().getPossibleStates()), 1, 1)
     );
@@ -129,12 +126,30 @@ public class MechanicalHealingMachine {
             }
     );
 
+    public static final DeferredRegister<SoundEvent> SOUNDS = DeferredRegister.create(
+            Registries.SOUND_EVENT, MOD_ID
+    );
+
+    public static final Holder<SoundEvent> MHM_SHOOP = SOUNDS.register(
+            "healing_machine_active_shoop",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MOD_ID,
+                    "healing_machine_active_shoop"))
+    );
+
+    public static final Holder<SoundEvent> MHM_TUNE = SOUNDS.register(
+            "healing_machine_active_tune",
+            () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath(MOD_ID,
+                    "healing_machine_active_tune"))
+    );
+
+
     public MechanicalHealingMachine(IEventBus modEventBus, ModContainer modContainer) {
         BLOCKS.register(modEventBus);
         BLOCK_ENTITY_TYPES.register(modEventBus);
         ITEMS.register(modEventBus);
-        POINTS_OF_INTEREST.register(modEventBus);
+        POINTS_OF_INTERESTS.register(modEventBus);
         PROFESSIONS.register(modEventBus);
+        SOUNDS.register(modEventBus);
         modContainer.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
         modEventBus.addListener(MechanicalHealingMachine::buildContents);
         modEventBus.addListener(MechanicalHealingMachine::onBuildCreativeTab);
@@ -158,7 +173,7 @@ public class MechanicalHealingMachine {
     }
 
     public static void onBuildCreativeTab(BuildCreativeModeTabContentsEvent event) {
-//        event.remove(CobblemonItems.HEALING_MACHINE.getDefaultInstance(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
+        event.remove(CobblemonItems.HEALING_MACHINE.getDefaultInstance(), CreativeModeTab.TabVisibility.PARENT_AND_SEARCH_TABS);
     }
 
     @SubscribeEvent
@@ -195,4 +210,5 @@ public class MechanicalHealingMachine {
     }
 
     // TODO: Intercept battle start when pokemons are healing
+    // NOTE: Maybe no longer necessary
 }

@@ -1,0 +1,8 @@
+{
+  "healing_machine_active_tune": {
+    "sounds": [ { "name": "cobblemonmechanicalhealingmachine:healing_machine_active_tune", "volume": 0.7 } ]
+  },
+  "healing_machine_active_shoop": {
+    "sounds": [ { "name": "cobblemonmechanicalhealingmachine:healing_machine_active_shoop", "volume": 0.7 } ]
+  }
+}
