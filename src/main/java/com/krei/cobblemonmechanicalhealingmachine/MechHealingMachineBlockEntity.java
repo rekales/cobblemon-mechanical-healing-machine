@@ -249,14 +249,30 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return active;
     }
 
+    public static float calculateHealingSpeedAbsolute(float rotSpeed) {
+        return Math.min(1f, rotSpeed / (float)ServerConfig.maxHealRotSpeed);
+    }
+
+    public static float calculateHealingSpeedRelative(float rotSpeed) {
+        return (rotSpeed - (float)ServerConfig.minActivationSpeed) / ((float)ServerConfig.maxHealRotSpeed - (float)ServerConfig.minActivationSpeed);
+    }
+
     private void updateHealingSpeed() {
         float rotSpeed = Math.abs(this.getSpeed());
         boolean wasActive = this.active;
 
-        this.healingSpeedAbsolute = Math.min(1f, rotSpeed / ServerConfig.maxHealRotSpeed);
-        this.healingSpeedRelative = (rotSpeed - ServerConfig.minActivationSpeed) / (ServerConfig.maxHealRotSpeed - ServerConfig.minActivationSpeed);
+        this.healingSpeedAbsolute = calculateHealingSpeedAbsolute(rotSpeed);
+        this.healingSpeedRelative = calculateHealingSpeedRelative(rotSpeed);
+        this.active = (float)ServerConfig.minActivationSpeed <= rotSpeed;
 
-        this.active = ServerConfig.minActivationSpeed <= rotSpeed;
+
+        if (level == null) {
+            return;
+        }
+
+        if (wasActive != this.active) {
+            level.setBlockAndUpdate(getBlockPos(), getBlockState().setValue(MechHealingMachineBlock.ACTIVE, this.active));
+        }
     }
 
     @Override
