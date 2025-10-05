@@ -183,6 +183,11 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS;
         }
 
+        if (CollectionsKt.none(party, Pokemon::canBeHealed)) {
+            serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyhealed")), true);
+            return InteractionResult.SUCCESS;
+        }
+
         if (!hmbEntity.isInUse()) {
             hmbEntity.activate(player.getUUID(), party);
             if (!hmbEntity.isActive()) {

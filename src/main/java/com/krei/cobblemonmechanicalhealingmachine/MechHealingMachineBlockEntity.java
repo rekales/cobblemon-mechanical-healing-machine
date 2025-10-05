@@ -47,7 +47,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private int currentSignal = 0;
     protected boolean active = false;  // Not on original
     private Map<Integer, PokeBall> pokeBalls = new HashMap<>();
-    private double healedAmountNum = 0;  // No need to sync
+    private double healedAmountFixed = 0;  // No need to sync
     private double healedAmountPercentMult = 0;  // No need to sync
     private int ticksHealing = 0;  // No need to sync
 
@@ -81,17 +81,20 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         updateBlockChargeLevel();
 
         double minPercentHealth = 1;
+        double minFixedHealth = 10000;
         List<Pokemon> partyList = party.toGappyList();
         for (int index = 0; index < partyList.size(); index++) {
             Pokemon pokemon = partyList.get(index);
             if (pokemon != null) {
                 pokeBalls.put(index, pokemon.getCaughtBall());
                 minPercentHealth = Math.min(minPercentHealth, (double) pokemon.getCurrentHealth()/pokemon.getMaxHealth());
+                minFixedHealth = Math.min(minFixedHealth, pokemon.getCurrentHealth());
             }
         }
         this.healedAmountPercentMult = minPercentHealth;
+        this.healedAmountFixed = minFixedHealth;
 
-        if (level == null || level.isClientSide()) return;
+        if (!active || level == null || level.isClientSide()) return;
         WorldExtensionsKt.playSoundServer(
                 level,
                 BlockPosExtensionsKt.toVec3d(getBlockPos()),
@@ -211,7 +214,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         }
         this.currentUser = null;
         this.pokeBalls.clear();
-        this.healedAmountNum = 0;
+        this.healedAmountFixed = 0;
         this.healedAmountPercentMult = 0;
         this.ticksHealing = 0;
     }
@@ -265,20 +268,35 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             return;
         }
 
+        boolean wasActive = this.active;
         this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
+
         if (currentUser != null) {  // Is in use
+
             if (this.active) {
+                if (!wasActive) {  // Sound when activated while pokemons are inside
+                    WorldExtensionsKt.playSoundServer(
+                            level,
+                            BlockPosExtensionsKt.toVec3d(getBlockPos()),
+                            MechanicalHealingMachine.MHM_TUNE.value(),
+                            SoundSource.NEUTRAL,
+                            1f,
+                            1f
+                    );
+                }
 
                 ServerPlayer serverPlayer = PlayerExtensionsKt.getPlayer(currentUser);
                 if (serverPlayer != null) {
                     PartyStore party = PlayerExtensionsKt.party(serverPlayer);
 
-                    float rotSpeed = Math.abs(this.getSpeed());
-                    double percentHealMult = 0.0016 + 0.04 * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
-                    double numHeal = ServerConfig.maxHealRate * Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed));
+                    double rotSpeed = Math.abs(this.getSpeed());
+                    double phSteepness = ServerConfig.healRatePercentSteepness;
+                    double percentHealMult = ServerConfig.maxHealRatePercent
+                            * ((Math.exp(phSteepness*(rotSpeed/ServerConfig.maxHealRotSpeed))-1)/(Math.exp(phSteepness)-1));
+                    double fixedHeal = ServerConfig.maxHealRateFixed * Math.min(1, Math.max(0, rotSpeed/ServerConfig.maxHealRotSpeed));
 
                     healedAmountPercentMult += percentHealMult;
-                    healedAmountNum += numHeal;
+                    healedAmountFixed += fixedHeal;
                     ticksHealing++;
 
                     for(Pokemon pokemon : party) {
@@ -286,7 +304,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
                             pokemon.setFaintedTimer(-1);
                         }
 
-                        int pokemonHealth = (int) Math.max(healedAmountNum, healedAmountPercentMult*pokemon.getMaxHealth());
+                        int pokemonHealth = (int) Math.max(healedAmountFixed, healedAmountPercentMult*pokemon.getMaxHealth());
                         if (pokemonHealth > pokemon.getMaxHealth()) {
                             pokemon.heal();
                         } else if (pokemon.getCurrentHealth() < pokemonHealth) {
