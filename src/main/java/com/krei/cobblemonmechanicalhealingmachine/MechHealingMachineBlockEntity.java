@@ -35,7 +35,7 @@ import java.util.*;
 // NOTE: Companion object turned into usual static variables. Breaks slight parity but makes it more Java-like
 /*  NOTE: Ended up with a complete overhaul anyway
     - Heal by a set amount while the pokemons are in the mhm.
-    - Pokemons stay until retrieved by owner.
+    - Pokemons stay until retrieved by owner or are fully healed.
     - Removed healing charge and other related variables
     - Removed infinite checks, unnecessary and let the natural variant have that feature
     - Removed a lot of unnecessary functions
@@ -50,9 +50,12 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     private double healedAmountFixed = 0;  // No need to sync
     private double healedAmountPercentMult = 0;  // No need to sync
     private int ticksHealing = 0;  // No need to sync
+    private float healingSpeedRelative = 0f; // Not on original, <0 = inactive, 0-1 = active speed
+    private float healingSpeedAbsolute = 0f; // Not on original, for healing calculation
 
     public MechHealingMachineBlockEntity(BlockPos blockPos, BlockState blockState) {
         super(MechanicalHealingMachine.HEALING_MACHINE_BLOCK_ENTITY.get(), blockPos, blockState);
+        this.updateHealingSpeed();
         this.updateRedstoneSignal();
         this.updateBlockChargeLevel();
     }
@@ -178,8 +181,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
     }
 
     private void updateRedstoneSignal() {
-        float rotSpeed = Math.abs(this.getSpeed());
-        int signal = (int) (Math.min(1, Math.max(0, rotSpeed/(float)ServerConfig.maxHealRotSpeed)) * MAX_REDSTONE_SIGNAL);
+        int signal = (int) (this.healingSpeedAbsolute * MAX_REDSTONE_SIGNAL);
         this.currentSignal = Math.min(signal, MAX_REDSTONE_SIGNAL);
     }
 
@@ -195,10 +197,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
             } else if (this.isInUse()) {
                 chargeLevel = MechHealingMachineBlock.MAX_CHARGE_LEVEL + 1;
             } else {
-                float rotSpeed = Math.abs(this.getSpeed());
-                chargeLevel = (int) (Math.min(1, Math.max(0,
-                        (rotSpeed-ServerConfig.minActivationSpeed)/(ServerConfig.maxHealRotSpeed-ServerConfig.minActivationSpeed))) *
-                                MechHealingMachineBlock.MAX_CHARGE_LEVEL);
+                chargeLevel = (int) (this.healingSpeedRelative * MechHealingMachineBlock.MAX_CHARGE_LEVEL);
             }
 
             int currentCharge = state.getValue(MechHealingMachineBlock.CHARGE_LEVEL);
@@ -250,6 +249,16 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return active;
     }
 
+    private void updateHealingSpeed() {
+        float rotSpeed = Math.abs(this.getSpeed());
+        boolean wasActive = this.active;
+
+        this.healingSpeedAbsolute = Math.min(1f, rotSpeed / ServerConfig.maxHealRotSpeed);
+        this.healingSpeedRelative = (rotSpeed - ServerConfig.minActivationSpeed) / (ServerConfig.maxHealRotSpeed - ServerConfig.minActivationSpeed);
+
+        this.active = ServerConfig.minActivationSpeed <= rotSpeed;
+    }
+
     @Override
     public float calculateStressApplied() {
         float impact = (float)ServerConfig.stressImpact;
@@ -269,10 +278,9 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         }
 
         boolean wasActive = this.active;
-        this.active = ServerConfig.minActivationSpeed <= Math.abs(this.getSpeed());
+        this.updateHealingSpeed();
 
         if (currentUser != null) {  // Is in use
-
             if (this.active) {
                 if (!wasActive) {  // Sound when activated while pokemons are inside
                     WorldExtensionsKt.playSoundServer(
@@ -289,11 +297,10 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
                 if (serverPlayer != null) {
                     PartyStore party = PlayerExtensionsKt.party(serverPlayer);
 
-                    double rotSpeed = Math.abs(this.getSpeed());
                     double phSteepness = ServerConfig.healRatePercentSteepness;
                     double percentHealMult = ServerConfig.maxHealRatePercent
-                            * ((Math.exp(phSteepness*(rotSpeed/ServerConfig.maxHealRotSpeed))-1)/(Math.exp(phSteepness)-1));
-                    double fixedHeal = ServerConfig.maxHealRateFixed * Math.min(1, Math.max(0, rotSpeed/ServerConfig.maxHealRotSpeed));
+                            * ((Math.exp(phSteepness * this.healingSpeedAbsolute) - 1) / (Math.exp(phSteepness) - 1));
+                    double fixedHeal = ServerConfig.maxHealRateFixed * this.healingSpeedAbsolute;
 
                     healedAmountPercentMult += percentHealMult;
                     healedAmountFixed += fixedHeal;
@@ -324,5 +331,13 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         this.updateRedstoneSignal();
         this.updateBlockChargeLevel();
         this.sendData();
+    }
+
+    public float getHealingSpeedRelative() {
+        return healingSpeedRelative;
+    }
+
+    public float getHealingSpeedAbsolute() {
+        return healingSpeedAbsolute;
     }
 }
