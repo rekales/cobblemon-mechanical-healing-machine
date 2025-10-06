@@ -83,16 +83,12 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
     // NOTE: Charge level 7 is used only when healing machine is offline, not on original
     public static int MAX_CHARGE_LEVEL = 7;
     public static final IntegerProperty CHARGE_LEVEL = IntegerProperty.create("charge", 0, MAX_CHARGE_LEVEL + 2);
-    public static final BooleanProperty ACTIVE = BooleanProperty.create("active");
-//    public static final BooleanProperty NATURAL = BooleanProperty.create("natural");
 
     public MechHealingMachineBlock(Properties properties) {
         super(properties);
         registerDefaultState(stateDefinition.any()
                 .setValue(HorizontalDirectionalBlock.FACING, Direction.NORTH)
-//                .setValue(NATURAL, false)
                 .setValue(CHARGE_LEVEL, 0)
-                .setValue(ACTIVE, false)
             );
     }
 
@@ -134,7 +130,6 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
 //        builder.add(HorizontalDirectionalBlock.FACING, NATURAL);
         builder.add(HorizontalDirectionalBlock.FACING);
         builder.add(CHARGE_LEVEL);
-        builder.add(ACTIVE);
     }
 
     @Override
@@ -228,12 +223,11 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             double posY = pos.getY() + 0.9;
             double posZ = pos.getZ() + 0.5 + ((random.nextFloat() * 0.3F) * (random.nextInt(2) > 0 ? 1 : -1));
 
-            if (state.getValue(ACTIVE)) {
+            if (state.getValue(CHARGE_LEVEL) == MAX_CHARGE_LEVEL + 1) {
                 level.addParticle(ParticleTypes.HAPPY_VILLAGER, posX, posY, posZ, 0.0, 0.0, 0.0);
-            } else {
+            } else if (state.getValue(CHARGE_LEVEL) == MAX_CHARGE_LEVEL + 2) {
                 level.addParticle(ParticleTypes.SMOKE, posX, posY, posZ, 0.0, 0.0, 0.0);
             }
-
         }
     }
 

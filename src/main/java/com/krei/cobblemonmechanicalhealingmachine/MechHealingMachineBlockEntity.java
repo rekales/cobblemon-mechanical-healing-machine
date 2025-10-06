@@ -35,6 +35,7 @@ import java.util.*;
 // NOTE: Companion object turned into usual static variables. Breaks slight parity but makes it more Java-like
 /*  NOTE: Ended up with a complete overhaul anyway
     - Heal by a set amount while the pokemons are in the mhm.
+    - Heal by a percent amount as well relative to the rpm, uses whichever is higher.
     - Pokemons stay until retrieved by owner or are fully healed.
     - Removed healing charge and other related variables
     - Removed infinite checks, unnecessary and let the natural variant have that feature
@@ -259,20 +260,10 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
     private void updateHealingSpeed() {
         float rotSpeed = Math.abs(this.getSpeed());
-        boolean wasActive = this.active;
 
         this.healingSpeedAbsolute = calculateHealingSpeedAbsolute(rotSpeed);
         this.healingSpeedRelative = calculateHealingSpeedRelative(rotSpeed);
         this.active = (float)ServerConfig.minActivationSpeed <= rotSpeed;
-
-
-        if (level == null) {
-            return;
-        }
-
-        if (wasActive != this.active) {
-            level.setBlockAndUpdate(getBlockPos(), getBlockState().setValue(MechHealingMachineBlock.ACTIVE, this.active));
-        }
     }
 
     @Override
@@ -298,7 +289,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
         if (currentUser != null) {  // Is in use
             if (this.active) {
-                if (!wasActive) {  // Sound when activated while pokemons are inside
+                if (!wasActive) {  // Rising-edge detector for when to make sounds
                     WorldExtensionsKt.playSoundServer(
                             level,
                             BlockPosExtensionsKt.toVec3d(getBlockPos()),
@@ -341,7 +332,7 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
                 }
             }
         } else {
-            // TODO: Handle NPC Entities here instead
+            // NOTE: Handle NPC Entities here instead
             clearData();
         }
         this.updateRedstoneSignal();
