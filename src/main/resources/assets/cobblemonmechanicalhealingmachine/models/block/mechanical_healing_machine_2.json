@@ -2,8 +2,8 @@
 	"format_version": "1.21.6",
 	"credit": "Made with Blockbench",
 	"textures": {
-		"tray": "cobblemon:block/functional/healing_machine_tray",
-		"particle": "cobblemon:block/functional/healing_machine_particle",
+		"tray": "cobblemon:block/healing_machine_tray",
+		"particle": "cobblemon:block/healing_machine_particle",
 		"all": "cobblemonmechanicalhealingmachine:block/mechanical_healing_machine"
 	},
 	"elements": [
