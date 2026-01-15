@@ -27,6 +27,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 // Dev Note: I have to rewrite the whole thing in java because I don't want to use kotlin
@@ -44,7 +45,7 @@ import java.util.*;
 */
 public class MechHealingMachineBlockEntity extends KineticBlockEntity {
 
-    private UUID currentUser = null;
+    @Nullable private UUID currentUser = null;
     private int currentSignal = 0;
     protected boolean active = false;  // Not on original
     private Map<Integer, PokeBall> pokeBalls = new HashMap<>();
@@ -225,8 +226,12 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return currentSignal;
     }
 
-    public UUID getCurrentUser() {
+    public @Nullable UUID getCurrentUser() {
         return currentUser;
+    }
+
+    public boolean isCurrentUser(Player player) {
+        return player.getUUID().equals(this.currentUser);
     }
 
     public boolean isInUse() {

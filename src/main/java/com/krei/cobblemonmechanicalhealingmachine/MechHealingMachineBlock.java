@@ -21,6 +21,7 @@ import com.mojang.serialization.MapCodec;
 import com.simibubi.create.content.kinetics.base.HorizontalKineticBlock;
 import com.simibubi.create.foundation.block.IBE;
 import kotlin.collections.CollectionsKt;
+import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.ParticleTypes;
@@ -28,7 +29,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -39,11 +39,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
 import net.minecraft.world.level.pathfinder.PathComputationType;
 import net.minecraft.world.phys.BlockHitResult;
@@ -52,16 +50,19 @@ import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
+import javax.annotation.ParametersAreNonnullByDefault;
 import java.util.List;
 
 // Dev Note: I have to rewrite the whole thing in java because I don't want to use kotlin
 // when working with the Create mod and the original class is not extendable.
 // NOTE: All references to HealingMachineBlockEntity is replaced by the mechanical variant
+@ParametersAreNonnullByDefault
+@MethodsReturnNonnullByDefault
 public class MechHealingMachineBlock extends HorizontalKineticBlock implements IBE<MechHealingMachineBlockEntity> {
 
     public static final MapCodec<MechHealingMachineBlock> CODEC = simpleCodec(MechHealingMachineBlock::new);
 
-    private VoxelShape NORTH_SOUTH_AABB = Shapes.or(
+    private final VoxelShape NORTH_SOUTH_AABB = Shapes.or(
             Shapes.box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0),
             Shapes.box(0.0625, 0.625, 0.0, 0.9375, 0.875, 0.125),
             Shapes.box(0.0625, 0.625, 0.875, 0.9375, 0.875, 1.0),
@@ -70,7 +71,7 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             Shapes.box(0.1875, 0.625, 0.125, 0.8125, 0.6875, 0.875)
     );
 
-    private VoxelShape WEST_EAST_AABB = Shapes.or(
+    private final VoxelShape WEST_EAST_AABB = Shapes.or(
             Shapes.box(0.0, 0.0, 0.0, 1.0, 0.625, 1.0),
             Shapes.box(0.875, 0.625, 0.0625, 1.0, 0.875, 0.9375),
             Shapes.box(0.0, 0.625, 0.0625, 0.125, 0.875, 0.9375),
@@ -187,6 +188,15 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             return InteractionResult.SUCCESS;
         }
 
+        if (MechHealingMachineBlockEntity.isUsingHealer(player)) {
+            if (hmbEntity.isCurrentUser(player)) {
+                hmbEntity.deactivate();
+            } else {
+                serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyhealing")), true);
+            }
+            return InteractionResult.SUCCESS;
+        }
+
         if (!hmbEntity.isInUse()) {
             hmbEntity.activate(player.getUUID(), party);
             if (!hmbEntity.isActive()) {
@@ -194,8 +204,6 @@ public class MechHealingMachineBlock extends HorizontalKineticBlock implements I
             } else {
                 serverPlayerEntity.sendSystemMessage(TextKt.green(LocalizationUtilsKt.lang("healingmachine.healing")), true);
             }
-        } else if (MechHealingMachineBlockEntity.isUsingHealer(player)) {  // Retrieve pokemons
-            hmbEntity.deactivate();
         } else {  // Another player tried to use occupied healer
             serverPlayerEntity.sendSystemMessage(TextKt.red(LocalizationUtilsKt.lang("healingmachine.alreadyinuse")), true);
             return InteractionResult.SUCCESS;
