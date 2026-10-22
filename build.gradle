@@ -29,6 +29,7 @@ repositories {
     maven { url = 'https://maven.neoforged.net/#/releases/' }
     maven { url = "https://maven.impactdev.net/repository/development/" } // Cobblemon
     maven { url = "https://thedarkcolour.github.io/KotlinForForge/"} // Kotlin
+    maven { url = "https://maven.squiddev.cc"} // CC: Tweaked
     maven {
         url = "https://jm.gserv.me/repository/maven-public" // JourneyMap
         content {
@@ -99,11 +100,13 @@ configurations {
 
 dependencies {
     implementation "com.simibubi.create:create-${minecraft_version}:${create_version}:slim"
-    implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
+    implementation "net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}"
     compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${flywheel_minecraft_version}:${flywheel_version}")
     runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${flywheel_minecraft_version}:${flywheel_version}")
     implementation("com.tterrag.registrate:Registrate:${registrate_version}")
     implementation("mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}")
+    compileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-core-api:${cc_tweaked_version}")
+    compileOnly("cc.tweaked:cc-tweaked-${minecraft_version}-forge-api:${cc_tweaked_version}")
 
     implementation ("com.cobblemon:neoforge:$cobblemon_version")
     implementation ("thedarkcolour:kotlinforforge-neoforge:$kotlin_for_forge_version") {
@@ -111,7 +114,7 @@ dependencies {
     }
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
 
-    implementation "curse.maven:jade-324717:6853386"
+    runtimeOnly "curse.maven:jade-324717:6853386"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
