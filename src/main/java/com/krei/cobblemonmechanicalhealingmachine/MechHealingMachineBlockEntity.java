@@ -248,7 +248,6 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         return alreadyHealing.contains(player.getUUID());
     }
 
-
     // Not on original from this point downwards
 
     public boolean isActive() {
@@ -343,6 +342,12 @@ public class MechHealingMachineBlockEntity extends KineticBlockEntity {
         this.updateRedstoneSignal();
         this.updateBlockChargeLevel();
         this.sendData();
+    }
+
+    @Override
+    public void remove() {
+        this.clearData();
+        super.remove();
     }
 
     public float getHealingSpeedRelative() {
